@@ -59,27 +59,30 @@ class User(AbstractUser):
         return self.username    
 
 GENDER_CHOICES = (
-    ("male", "mail"),
+    ("male", "male"),
     ("female", "female"),
 )
 
 class Profile(models.Model):
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name="profile")
+    profile_picture=models.ImageField(upload_to="profile_picture",null=True,blank=True)
     first_name=models.CharField(max_length=100,blank=True,null=True)
     last_name=models.CharField(max_length=100,blank=True,null=True)
     country=models.CharField(max_length=100,null=True,blank=True)
     dob=models.CharField(max_length=100,null=True,blank=True)
     gender=models.CharField(max_length=100,choices=GENDER_CHOICES)
-    about_me=models.TextField()
+    about_me=models.TextField(null=True,blank=True)
+    
 
     def __str__(self):
         return self.first_name
 
 class Category(models.Model):
-    cat_name=moedls.CharField(max_length=100,null=True,blank=True)
+    cat_name=models.CharField(max_length=100,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-
+    def __str__(self):
+        return self.cat_name
 
 
 class Post(models.Model):
@@ -92,32 +95,26 @@ class Post(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.description
+        return self.posted_by.first_name
 
 class Comments(models.Model):
-    post=models.ForeignKey(Post,on_delete=models.CASCADE)
-    user=models.Foreignkey(User,on_delete=models.CASCADE)
+    post=models.ForeignKey(Post,on_delete=models.CASCADE,related_name="post_comment")
+    user=models.ForeignKey(User,on_delete=models.CASCADE)
     comment=models.CharField(max_length=255,null=True,blank=True)
     like=models.BooleanField(default=False)
     created_at=models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.comment
+        return self.post.posted_by.first_name  # kiski post p comment hua
 
 class Reply(models.Model):
     # post=models.ForeignKey(Post,on_delete=models.CASCADE)
-    comments=models.Foereignkey(Comments,on_delete=models.CASCADE)
+    comments=models.ForeignKey(Comments,on_delete=models.CASCADE)
     reply=models.CharField(max_length=100,null=True,blank=True)
+    
 
     def __str__(self):
-        return self.reply
-
-
-
-
-
-
-
+        return self.comments.user.first_name   # kis user ne comment kiya tha particular post mai.. so it is a reply against particular user that is returned.
 
 
 TOKEN_TYPE_CHOICES = (

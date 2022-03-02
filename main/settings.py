@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
     "rest_framework",
+    "drf_yasg",
     "user"
 ]
 
@@ -88,6 +89,10 @@ DATABASES = {
     }
 }
 
+
+FORMAT_DATE="%Y-%m-%d"
+
+
 REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -97,11 +102,21 @@ REST_FRAMEWORK = {
   
 }
 
+
+SWAGGER_SETTINGS = {
+    "DOC_EXPANSION": "none",
+    "TAGS_SORTER": "alpha",
+    "OPERATIONS_SORTER": "alpha",
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+    },
+}
+
 from datetime import timedelta
 ...
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
