@@ -75,8 +75,45 @@ class Profile(models.Model):
     def __str__(self):
         return self.first_name
 
+class Category(models.Model):
+    cat_name=moedls.CharField(max_length=100,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
 class Post(models.Model):
+    category=models.ForeignKey(Category,on_delete=models.CASCADE)
     posted_by=models.ForeignKey(User,on_delete=models.CASCADE)
+    description=models.CharField(max_length=255,blank=True,null=True)
+    pic=models.ImageField(upload_to="post_pic",blank=True,null=True)
+    tags=models.CharField(max_length=100,blank=True,null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.description
+
+class Comments(models.Model):
+    post=models.ForeignKey(Post,on_delete=models.CASCADE)
+    user=models.Foreignkey(User,on_delete=models.CASCADE)
+    comment=models.CharField(max_length=255,null=True,blank=True)
+    like=models.BooleanField(default=False)
+    created_at=models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.comment
+
+class Reply(models.Model):
+    # post=models.ForeignKey(Post,on_delete=models.CASCADE)
+    comments=models.Foereignkey(Comments,on_delete=models.CASCADE)
+    reply=models.CharField(max_length=100,null=True,blank=True)
+
+    def __str__(self):
+        return self.reply
+
+
+
 
 
 
