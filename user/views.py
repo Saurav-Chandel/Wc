@@ -134,8 +134,15 @@ class GetAllProfile(APIView):
                             description='Search other profiles ',
                             type=openapi.TYPE_STRING,
                             )
+
+    post_id = openapi.Parameter('post_id',
+                            in_=openapi.IN_QUERY,
+                            description='find all posts on the basis of post id',
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(type=openapi.TYPE_INTEGER)
+                            )                        
     @swagger_auto_schema(
-            manual_parameters=[search]
+            manual_parameters=[search,post_id]
     )                        
 
     @csrf_exempt
@@ -147,11 +154,20 @@ class GetAllProfile(APIView):
             else:
                 search=data.get('search')    
 
+            if data.get('post_id'):
+                post_id=data.get('post_id')
+            else:
+                post_id=data.get('post_id')     
 
             profile=Profile.objects.all()
 
             if search:
                 profile=profile.filter(Q(user__first_name__icontains=search))
+
+            # if post_id:
+            #     profile1=Post.objects.filter(posted_by=post_id)  
+            #     print(profile1) 
+            #     return ResponseOk({"data":profile1.data}) 
 
             if profile:    
                 serializer=ProfileSerializer(profile,many=True) 
@@ -1065,7 +1081,6 @@ class CreateReply(APIView):
         ),
     )
 
-
     @csrf_exempt
     def post(self, request):
         serializer = ReplySerializer(data=request.data)
@@ -1227,7 +1242,205 @@ class CreateReply(APIView):
 
 
 
+#ManyToMany followers and following in profile Model.
 
+class AddFollower(APIView):
+    '''
+    Add follower
+    '''
+
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [authentication.JWTAuthentication]
+
+    def post(self,request):
+        data=request.data
+    
+        jo_follow_kr_raha_hai = Profile.objects.get(id=data.get('jo_follow_kr_raha_hai_id'))   #srv follows grv and srv following added gaurav.
+        jisko_follow_kiya =  Profile.objects.get(id=data.get('jisko_follow_kiya_id'))    #grv is followed by srv and srv is follower of grv.
+
+        jo_follow_kr_raha_hai.following.add(jisko_follow_kiya)
+        jo_follow_kr_raha_hai.save()
+
+        jisko_follow_kiya.followers.add(jo_follow_kr_raha_hai)
+        jisko_follow_kiya.save()
+
+        print(str(jo_follow_kr_raha_hai) + "follows" + str(jisko_follow_kiya) )
+
+        return Response({'status':status.HTTP_200_OK,
+                         "data":"",
+                         "message":str(jo_follow_kr_raha_hai.first_name) +" "+ "follows" +" "+ str(jisko_follow_kiya.first_name)})
+
+#post man API
+class AddFollowing(APIView):
+    '''
+    add following
+    '''
+
+    def post(self,request):
+        data=request.data
+        if data:
+
+           jo_follow_kr_raha_hai=Profile.objects.get(id=data.get('jo_follow_kr_raha_hai_id')) 
+           jisko_follow_kiya=Profile.objects.get(id=data.get('jisko_follow_kiya_id')) 
+
+           u=UserFollowing.objects.filter(profile_id=data.get('jo_follow_kr_raha_hai_id'))
+           uu=UserFollowing.objects.filter(following_profile_id=data.get('jisko_follow_kiya_id'))
+
+           if data.get('jo_follow_kr_raha_hai_id') == data.get('jisko_follow_kiya_id'):
+               return Response({"msg":"you can not follow itself"})
+           else:    
+                print(len(UserFollowing.objects.filter(profile_id=data.get('jo_follow_kr_raha_hai_id'))))
+                print(len(UserFollowing.objects.filter(following_profile_id=data.get('jisko_follow_kiya_id'))))
+     
+                if len(u)>=1 and len(uu)>=1: 
+                    return Response({"msg":"you already followed this user"})
+                else:
+
+                     UserFollowing.objects.create(profile_id=jo_follow_kr_raha_hai,
+                                       following_profile_id=jisko_follow_kiya)
+             
+                     return Response({'status':status.HTTP_200_OK,
+                                      "data":"",
+                                      "message":str(jo_follow_kr_raha_hai) +" "+ "follows" +" "+ str(jisko_follow_kiya)})
+        return Response({"msg":"enter a input value"})
+
+
+class GetAllFollow(APIView):
+    '''
+    List of All follows
+    '''
+    def get(self,request):
+        try:
+            follow=UserFollowing.objects.all()
+           
+            serializer=FollowSerializer(follow,many=True)
+           
+         
+            return ResponseOk({
+                    'data':serializer.data,
+                    'status':status.HTTP_200_OK,
+                    'msg':'All UserFollowing List'
+                })  
+ 
+        except:
+            return ResponseBadRequest({
+                "data":None,
+                "status":status.HTTP_400_BAD_REQUEST,
+                "msg":"UserFollowing list does not exists"
+            })      
+
+#swagger implementation
+class CreateFollow(APIView):
+
+    '''
+    add following
+    '''
+    @swagger_auto_schema(
+        operation_description="update Following",
+        request_body=FollowSerializer,
+    )
+    def post(self,request):
+        data=request.data
+        serializer=FollowSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':status.HTTP_200_OK,
+                         "data":serializer.data,
+                         "message":"follow successfully"} )
+
+        return Response({"data":serializer.errors,"msg":"you already followed this user"})
+
+
+class GetFollow(APIView):
+    '''
+    get userFollowing by PK
+    '''
+    @csrf_exempt
+    def get_object(self,pk):
+        try:
+            return UserFollowing.objects.get(pk=pk)
+        except UserFollowing.DoesNotExist:
+            return ResponseNotFound()
+
+    def post(self,request,pk):
+        try:
+            follow=self.get_object(pk)
+            serializer=FollowSerializer(follow)
+            return ResponseOk({"data":serializer.data,
+                                "status":status.HTTP_200_OK,
+                                "message":"get Userfollow by pk"})
+        except:
+            return  ResponseBadRequest(
+                {
+                    "data":None,
+                    "code":status.HTTP_400_BAD_REQUEST,
+                    "message":"Comment Does Not exists."
+                }
+            )    
+
+class UpdateFollow(APIView):
+    '''
+    Update UserFollowing 
+    '''
+
+    def get_object(self,pk):
+        try:
+            return UserFollowing.objects.get(pk=pk)
+        except UserFollowing.DoesNotExist:
+            return ResponseNotFound()
+    
+    @swagger_auto_schema(
+        operation_description="update Following",
+        request_body=FollowSerializer,
+    )        
+
+    @csrf_exempt
+    def update(self,request,pk):
+        try:
+            data=request.data        
+            follow=self.get_object(pk)
+            serializer=FollowSerializer(follow)   
+            if serializer.is_valid():
+                serializer.save()
+                return ResponseOk({"data":serializer.data,
+                                    "status":status.HTTP_200_OK,
+                                    "message":"update UserFollowing successfully"}) 
+        except:
+            return ResponseBadRequest({"data":None,
+                                        "status":status.HTTP_400_BAD_REQUEST,
+                                        "message":"UserFollowing does not exists."})   
+
+
+class DeleteFollow(APIView):
+    '''
+    delet UserFollowing
+    '''
+
+    def get_object(self,pk):
+        try:
+            return UserFollowing.objects.get(pk=pk)
+        except UserFollowing.DoesNotExist:
+            return ResponseNotFound()
+
+    @csrf_exempt
+    def delete(self,request,pk):
+        try:
+            follow=self.get_object(pk)
+            follow.delete()
+            return ResponseOk({"data":None,
+                                "status":status.HTTP_200_OK,
+                                "message":"UserFollowing deleted successfully"})
+
+        except:
+            return ResponseBadRequest({"data":None,
+                                        "status":status.HTTP_400_BAD_REQUEST,
+                                        "message":"UserFollowing does not exists"})                        
+
+
+
+
+                 
+        # UserFollowing.objects.create(profile_id=data.get('profile_id'),following_user_id=data.get('following_user_id'))
 
 
 

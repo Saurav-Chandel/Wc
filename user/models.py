@@ -72,10 +72,16 @@ class Profile(models.Model):
     dob=models.CharField(max_length=100,null=True,blank=True)
     gender=models.CharField(max_length=100,choices=GENDER_CHOICES)
     about_me=models.TextField(null=True,blank=True)
+
     
+    # followers=models.ManyToManyField("self",blank=True)    # How many followers of the particular Profile id.
+    # following=models.ManyToManyField("self",blank=True)    #How many followings of the individual profile id.
 
     def __str__(self):
         return self.first_name
+
+   
+
 
 class Category(models.Model):
     cat_name=models.CharField(max_length=100,null=True,blank=True)
@@ -87,7 +93,7 @@ class Category(models.Model):
 
 class Post(models.Model):
     category=models.ForeignKey(Category,on_delete=models.CASCADE)
-    posted_by=models.ForeignKey(User,on_delete=models.CASCADE)
+    posted_by=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='profile_post')
     description=models.CharField(max_length=255,blank=True,null=True)
     pic=models.ImageField(upload_to="post_pic",blank=True,null=True)
     tags=models.CharField(max_length=100,blank=True,null=True)
@@ -97,9 +103,23 @@ class Post(models.Model):
     def __str__(self):
         return self.posted_by.first_name
 
+# from rest_framework.validators import UniqueTogetherValidator
+class UserFollowing(models.Model):
+    profile_id = models.ForeignKey("Profile",on_delete=models.CASCADE, related_name="following",blank=True)   #who follows the other user
+    following_profile_id  = models.ForeignKey("Profile",on_delete=models.CASCADE, related_name="followers",blank=True)  #who is followed by other user
+    created = models.DateTimeField(auto_now_add=True)  
+
+    class Meta:
+        unique_together = (('profile_id', 'following_profile_id',))
+        ordering = ["-created"]
+
+    def __str__(self):
+        return f"{self.profile_id} follows {self.following_profile_id}" 
+
+
 class Comments(models.Model):
     post=models.ForeignKey(Post,on_delete=models.CASCADE,related_name="post_comment")
-    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    user=models.ForeignKey(Profile,on_delete=models.CASCADE)
     comment=models.CharField(max_length=255,null=True,blank=True)
     like=models.BooleanField(default=False)
     created_at=models.DateTimeField(auto_now=True)

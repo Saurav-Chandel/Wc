@@ -28,11 +28,7 @@ class LoginSerializer(serializers.ModelSerializer):
         } 
 
 
-#Profile Serializer
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Profile
-        fields="__all__"
+
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -77,3 +73,41 @@ class ReplySerializer(serializers.ModelSerializer):
     class Meta:
         model=Reply
         fields="__all__"         
+
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    # following=FollowSerializer(read_only=True,many=True)
+    # followers=FollowSerializer(read_only=True,many=True)
+    profile_post=PostSerializer(read_only=True,many=True)
+    class Meta:
+        model=Profile
+        fields="__all__"
+
+from rest_framework.validators import UniqueTogetherValidator
+# from rest_framework.validators import UniqueValidator
+class FollowSerializer(serializers.ModelSerializer):
+
+    profile_id=ProfileSerializer(read_only=True)
+    following_profile_id=ProfileSerializer(read_only=True)
+
+    class Meta:
+        model=UserFollowing
+        fields="__all__"
+
+
+        # validators = [
+           
+        #     UniqueTogetherValidator(
+        #         queryset=UserFollowing.objects.all(),
+        #          fields=['profile_id', 'following_profile_id']
+        #     )
+        # ]
+
+        # if validators:
+        #     print("_____________")
+        #     raise serializers.ValidationError("This field must be an even number.")
+
+
+#Profile Serializer
+

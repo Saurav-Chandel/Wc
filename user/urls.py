@@ -38,6 +38,16 @@ urlpatterns = [
     path("reply/api/v1/list/", views.GetAllReply.as_view(), name="replylist"),
     
     path("allpost", views.PostCreateGen.as_view()),
+    path("addfollower", views.AddFollowing.as_view()),
+
+    path("follow/api/v1/create/", views.CreateFollow.as_view()),
+    path("follow/api/v1/list/", views.GetAllFollow.as_view(), name="comment"),
+    path("follow/api/v1/get/<int:pk>/", views.GetFollow.as_view(), name="comment"),
+    path("follow/api/v1/update/<int:pk>/", views.UpdateFollow.as_view(), name="comment"),
+    path("follow/api/v1/delete/<int:pk>/", views.DeleteFollow.as_view()),
+
+
+    
 
 
     # path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

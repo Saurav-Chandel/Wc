@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User,Profile,Post,Category,Comments,Reply
+from .models import User,Profile,Post,Category,Comments,Reply,UserFollowing
 # Register your models here.
 
 class CommentsAdmin(admin.ModelAdmin):
@@ -9,6 +9,7 @@ class CommentsAdmin(admin.ModelAdmin):
 
 admin.site.register(User)
 admin.site.register(Profile)
+admin.site.register(UserFollowing)
 admin.site.register(Post)
 admin.site.register(Category)
 admin.site.register(Comments,CommentsAdmin)
