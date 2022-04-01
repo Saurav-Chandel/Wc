@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Web Socket</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+    </head>
+    <body>
+
+     <h1> Count Page </h1>
+     <h2 id ="ct"> </h2>
+
+        <script>
+        var ws = new WebSocket('ws://localhost:8000/ws/sc/')  
+
+        ws.onopen = function () {
+            console.log(('WebSocket connetion open from front end.....'))
+            ws.send('Hi Message form client....')
+        }
+
+        {% comment %}  this property is run when msg reived from client  {% endcomment %}
+        ws.onmessage = function (event) {
+            console.log("EVENT...",event)
+            console.log('Message received from server.....',event.data)
+            console.log("type of event data is...",typeof(event.data))
+
+            var data=JSON.parse(event.data)
+            console.log("type of event data is...",typeof(data))
+            document.getElementById("ct").innerText=event.data
+            
+        }
+        ws.onerror = function (event) {
+            console.log(('WebSocket error occured..........',event))
+        }
+        ws.onclose = function (event) {
+            console.log(('WebSocket connection closed.........',event))
+        }
+    
+        </script>
+    </body>
+</html>
+
+
+
+
+
+{% comment %} <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Chat Rooms</title>
+</head>
+<body>
+    What chat room would you like to enter?<br>
+    <input id="room-name-input" type="text" size="100"><br>
+    <input id="room-name-submit" type="button" value="Enter">
+
+    <script>
+        document.querySelector('#room-name-input').focus();
+        document.querySelector('#room-name-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#room-name-submit').click();
+            }
+        };
+
+        document.querySelector('#room-name-submit').onclick = function(e) {
+            var roomName = document.querySelector('#room-name-input').value;
+            window.location.pathname = '/chat/' + roomName + '/';
+        };
+    </script>
+</body> {% endcomment %}
+
+
+
+
+
+
+
+
+
+
+

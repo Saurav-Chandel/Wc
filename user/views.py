@@ -1,3 +1,4 @@
+from re import S
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -126,7 +127,7 @@ class GetAllProfile(APIView):
     """
     Get lis of profile
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.JWTAuthentication]
 
     search = openapi.Parameter('search',
@@ -251,7 +252,7 @@ class UpdateProfile(APIView):
         request_body=ProfileSerializer,
     )
     @csrf_exempt
-    def put(self,request,pk):
+    def patch(self,request,pk):
         try:
             profile=self.get_object(pk)
             serializer=ProfileSerializer(profile,data=request.data)
@@ -549,12 +550,11 @@ class DeleteCategory(APIView):
 
 
 from django.forms.models import model_to_dict
-
 class GetAllPost(APIView):
     """
     Get All post
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.JWTAuthentication]
 
     category = openapi.Parameter('category',
@@ -767,8 +767,6 @@ class DeletePost(APIView):
             )
                 
 
-
-
 class GetAllComment(APIView):
     """
     Get All Comment
@@ -796,16 +794,26 @@ class GetAllComment(APIView):
             else:
                 post_id=""
 
-            post=Comments.objects.all()
-
+            comment=Comments.objects.all()
             if post_id:
-                post=post.filter(post=post_id)
+                comment=comment.filter(post=post_id)
+                total_comment=Comments.objects.filter(post=post_id).count()
+                total_likes=Comments.objects.filter(post=post_id,like=True).count()
 
-            if post:
-                serializer=CommentsSerializer(post,many=True) 
+                return ResponseOk({
+                    'data':comment.values(),
+                    'total_comments':total_comment,
+                    'total_likes':total_likes,
+                    'status':status.HTTP_200_OK,
+                    'msg':'All Comment List'
+                }) 
+
+            if comment:
+                serializer=CommentsSerializer(comment,many=True) 
                 
                 return ResponseOk({
                     'data':serializer.data,
+                    # 'total_comment':total_comment,
                     'status':status.HTTP_200_OK,
                     'msg':'All Comment List'
                 })  
@@ -825,9 +833,9 @@ class GetAllComment(APIView):
 class CreateComment(APIView):
     """
     Create Comment
-    """
+    """ 
 
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.JWTAuthentication]
     # parser_classes = (FormParser, MultiPartParser)
     
@@ -841,11 +849,10 @@ class CreateComment(APIView):
                 "user": openapi.Schema(type=openapi.TYPE_INTEGER),
                 "comment": openapi.Schema(type=openapi.TYPE_STRING),
                 "like": openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                "created_at": openapi.Schema(type=openapi.TYPE_STRING,format=settings.FORMAT_DATE)
+                # "created_at": openapi.Schema(type=openapi.TYPE_STRING,format=settings.FORMAT_DATE)
             },
         ),
     )
-
 
     @csrf_exempt
     def post(self, request):
@@ -1241,7 +1248,6 @@ class CreateReply(APIView):
 #             ) 
 
 
-
 #ManyToMany followers and following in profile Model.
 
 class AddFollower(APIView):
@@ -1255,7 +1261,7 @@ class AddFollower(APIView):
     def post(self,request):
         data=request.data
     
-        jo_follow_kr_raha_hai = Profile.objects.get(id=data.get('jo_follow_kr_raha_hai_id'))   #srv follows grv and srv following added gaurav.
+        jo_follow_kr_raha_hai = Profile.objects.get(id=data.get('jo_follow_kr_raha_hai_id'))   #srv follows grv and srv's following added gaurav.
         jisko_follow_kiya =  Profile.objects.get(id=data.get('jisko_follow_kiya_id'))    #grv is followed by srv and srv is follower of grv.
 
         jo_follow_kr_raha_hai.following.add(jisko_follow_kiya)
@@ -1309,18 +1315,79 @@ class GetAllFollow(APIView):
     '''
     List of All follows
     '''
+    #user who follows the other user(jo follow kr rha hai)
+    profile_id = openapi.Parameter('profile_id',
+                            in_=openapi.IN_QUERY,
+                            description='enter the profile_id',
+                            type=openapi.TYPE_STRING,
+                            )  
+
+    #jis jis ko follow kiya un sbki id.
+    # post_id_array = openapi.Parameter('post_id_array',
+    #                         in_=openapi.IN_QUERY,
+    #                         description='find all posts on the basis of post id',
+    #                         type=openapi.TYPE_ARRAY,
+    #                         items=openapi.Items(type=openapi.TYPE_INTEGER)
+    #                         )                        
+
+    @swagger_auto_schema(
+            manual_parameters=[profile_id]
+    )
+
+    @csrf_exempt
     def get(self,request):
         try:
+            data=request.GET
+            # if data.get('post_id_array'):
+            #    post_id_array=data.get('post_id_array')
+            #    post_id_array=post_id_array.split(",")
+            # else:
+            #    post_id_array=""
+
+            # print(post_id_array)   
+
+            if data.get('profile_id'):
+               profile=data.get('profile_id')
+            else:
+               profile=""   
+
+            print(profile)   
+
             follow=UserFollowing.objects.all()
-           
-            serializer=FollowSerializer(follow,many=True)
-           
-         
-            return ResponseOk({
-                    'data':serializer.data,
-                    'status':status.HTTP_200_OK,
-                    'msg':'All UserFollowing List'
-                })  
+            # print(follow)
+            # if profile:
+            #     follow=follow.filter(profile_id=profile)  #filter all the profiles which is followed by particular user.  
+            #     print(follow)
+
+            if profile:
+                follow=follow.filter(profile_id=profile).values('following_profile_id')
+                # follow=follow.filter(following_profile_id__in=follow1).values('following_profile_id')  #get id of those person who is followed by particular person.
+        
+                post=Post.objects.filter(posted_by__in=follow).values() #filter all the posts based on following id's.
+                
+                if post:
+                    return ResponseOk({
+                            'data':post,
+                            'status':status.HTTP_200_OK,
+                            'msg':'list of all posts of followwd person'
+                        })
+                else:
+                    return ResponseBadRequest({
+                    "data":None,
+                    "status":status.HTTP_400_BAD_REQUEST,
+                    "msg":"UserFollowing list does not exists"
+                })         
+
+            if follow:
+                serializer=FollowSerializer(follow,many=True)
+            
+                return ResponseOk({
+                        'data':serializer.data,
+                        'status':status.HTTP_200_OK,
+                        'msg':'All UserFollowing List'
+                    })  
+            else:
+                return Response({"msg":"error"})        
  
         except:
             return ResponseBadRequest({
@@ -1331,7 +1398,6 @@ class GetAllFollow(APIView):
 
 #swagger implementation
 class CreateFollow(APIView):
-
     '''
     add following
     '''
@@ -1437,19 +1503,7 @@ class DeleteFollow(APIView):
                                         "message":"UserFollowing does not exists"})                        
 
 
-
-
-                 
         # UserFollowing.objects.create(profile_id=data.get('profile_id'),following_user_id=data.get('following_user_id'))
-
-
-
-
-
-
-
-
-
 
 
 class PostCreateGen(generics.GenericAPIView):
@@ -1460,4 +1514,121 @@ class PostCreateGen(generics.GenericAPIView):
         # dictV['data']=post
         # dictV['msg']="list All posts"
         return Response({'data':post,'msg':'All Matches','status':'200'})
+
+
+# Rajesh Sir API.
+class UpdateNotification(generics.GenericAPIView):
+    def post(self,request):
+        data=request.data
+        n=UserNotifications.objects.filter(User_id=request.data.get('User_id'))
+        n.update(text=request.data.get('text'))
+        return Response({
+          "data":{"Notifications": n.values()},
+          "msg":'Notifications Updated successfully.',
+          "status":200
+        })
+
+        # serializer=UserNotificationsSerializer(data=data)
+        # if serializer.is_valid():
+        #     serializer.save()
+
+        #     return Response({"data":data,
+        #                      "status":status.HTTP_200_OK,
+        #                      "message":"notification create successfully"})
+
+        # return ResponseBadRequest({"data":None,
+        #                             "status":status.HTTP_400_BAD_REQUEST,
+        #                             "message":"notification does not create"})
+
+
+# class CommentSettings(generics.GenericAPIView):
+#     def post(self,request):
+#         data=request.data
         
+#         # c=CommentSettings.objects.filter(User_id=data.get('User_id'))
+#         # c.update(status=data.get('status'))  
+#         serializer=CommentSettingsSerializer(data=data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({"data":serializer.data})
+#         return Response({"data":None})    
+
+#         # CommentSettings.objects.filter(User_id=request.data.get('User_id')).update(status=Fasle)
+
+class CommentSettingsAPI(generics.GenericAPIView):
+    def post(self,request):
+       data=request.data
+       u=User.objects.filter(id=data.get('User_id'))
+       if u:
+          u=User.objects.get(id=data.get('User_id'))
+          if len(CommentSettings.objects.filter(User_id=u))>0:
+             CommentSettings.objects.update(User_id=u,Status=data.get('Status'))
+             return Response({"data":"CommentSettings updated successfully"})
+          else:
+             c=CommentSettings.objects.create(User_id=u,Status=data.get('Status'))
+             c.save()
+             return Response({"data":"CommentSettings created successfully"})
+       else:
+           return Response({"msg":"User does not exists"})        
+    
+
+
+class LikeSettingsAPI(generics.GenericAPIView):
+    def post(self,request,*args,**kwargs):
+       data=request.data
+       u=User.objects.filter(id=data.get('User_id'))      
+       if u:
+           u=User.objects.get(id=data.get('User_id'))
+           if len(LikeSettings.objects.filter(User_id=u))>0:
+               LikeSettings.objects.update(User_id=u,Status=data.get('Status'))
+               return Response({"data":"LikeSettings updated successfully"})
+           else:
+               l=LikeSettings.objects.create(User_id=u,Status=data.get('Status'))
+               l.save()
+               return Response({"data":"LikeSettings created successfully"})
+       else:
+           return Response({"msg":"User with this id does not exists"})        
+
+
+class ShareSettingsAPI(generics.GenericAPIView):
+    def post(self,request,*args,**kwargs):
+       data=request.data
+       u=User.objects.filter(id=data.get('User_id'))
+       print(u)
+       if u:
+            u=User.objects.get(id=data.get('User_id'))
+            print(u)
+            if len(ShareSettings.objects.filter(User_id=u))>0:
+               ShareSettings.objects.update(User_id=u,Status=data.get('Status'))
+               return Response({"msg":"ShareSettings updated successfully"})  
+            else:
+               s=ShareSettings.objects.create(User_id=u,Status=data.get('Status'))  
+               s.save()
+               return Response({"msg":"ShareSettings created successfully"})
+       else:
+           return Response({"msg":"User with this id does not exists"})      
+
+# class CommentSettingsAPI(generics.GenericAPIView):
+#     # permission_classes = (IsAuthenticated,)
+#     def post(self, request, *args, **kwargs):
+#         n=CommentSettings.objects.filter(User_id=request.POST['User_id'])
+#         print(n)
+#         n.update(Status=request.POST['Status'])
+#         return Response({
+#         "data":{"Notifications": n.values('Status','User_id')[0:]},
+#         "msg":'Notifications Updated successfully.',
+#         "status":200
+#         })
+
+
+
+
+
+def index(request):
+    return render(request, 'app/index.html')
+
+
+def room(request, room_name):
+        return render(request, 'chat/room.html', {
+        'room_name': room_name
+})

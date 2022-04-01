@@ -1,3 +1,4 @@
+from random import choices
 from django.db import models
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.utils.timezone import now
@@ -81,8 +82,6 @@ class Profile(models.Model):
         return self.first_name
 
    
-
-
 class Category(models.Model):
     cat_name=models.CharField(max_length=100,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -103,10 +102,18 @@ class Post(models.Model):
     def __str__(self):
         return self.posted_by.first_name
 
+
+STATUS_TYPE_CHOICES = (
+    ("accept", "accept"),
+    ("decline", "decline"),
+)
+
 # from rest_framework.validators import UniqueTogetherValidator
 class UserFollowing(models.Model):
+    # post=models.ForeignKey(Post,on_delete=models.CASCADE,null=True,blank=True)
     profile_id = models.ForeignKey("Profile",on_delete=models.CASCADE, related_name="following",blank=True)   #who follows the other user
     following_profile_id  = models.ForeignKey("Profile",on_delete=models.CASCADE, related_name="followers",blank=True)  #who is followed by other user
+    # status=models.CharField(max_length=100,choices=STATUS_TYPE_CHOICES)
     created = models.DateTimeField(auto_now_add=True)  
 
     class Meta:
@@ -127,15 +134,49 @@ class Comments(models.Model):
     def __str__(self):
         return self.post.posted_by.first_name  # kiski post p comment hua
 
+
 class Reply(models.Model):
     # post=models.ForeignKey(Post,on_delete=models.CASCADE)
     comments=models.ForeignKey(Comments,on_delete=models.CASCADE)
     reply=models.CharField(max_length=100,null=True,blank=True)
     
-
     def __str__(self):
         return self.comments.user.first_name   # kis user ne comment kiya tha particular post mai.. so it is a reply against particular user that is returned.
 
+
+# class Notification(models.Model):
+#     user=models.ForeignKey(User,on_delete=models.CASCADE,null=True,blank=True)
+#     post=models.ForeignKey(Post,blank=True,on_delete=models.CASCADE,null=True)
+#     timestamp = models.DateTimeField(auto_now_add=True)
+#     notify_type = models.CharField(max_length=6)
+#     read = models.BooleanField(default=False)
+
+#     def __str__(self):
+#             return str(self.user)
+
+
+class UserNotifications(models.Model):
+    User_id=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name='user99')
+    post=models.ForeignKey(Post,on_delete=models.CASCADE,null=True,blank=True)
+    Name=models.CharField(max_length=500,blank=True,null=True)
+    text=models.CharField(max_length=500,blank=True,null=True)
+
+    def __str__(self):
+        return str(self.User_id)
+
+class CommentSettings(models.Model):
+    User_id=models.ForeignKey(User,on_delete=models.CASCADE)
+    Status=models.BooleanField(default=True)
+
+
+class LikeSettings(models.Model):
+    User_id=models.ForeignKey(User,on_delete=models.CASCADE)
+    Status=models.BooleanField(default=True)
+
+
+class ShareSettings(models.Model):
+    User_id=models.ForeignKey(User,on_delete=models.CASCADE)
+    Status=models.BooleanField(default=True)
 
 TOKEN_TYPE_CHOICES = (
     ("verification", "Email Verification"),

@@ -47,7 +47,15 @@ urlpatterns = [
     path("follow/api/v1/delete/<int:pk>/", views.DeleteFollow.as_view()),
 
 
-    
+    path("notification/api/v1/create/", views.UpdateNotification.as_view()),
+
+    path("commentsetting/", views.CommentSettingsAPI.as_view()),
+    path("LikeSetting/", views.LikeSettingsAPI.as_view()),
+    path("ShareSetting/", views.ShareSettingsAPI.as_view()),
+
+    path('', views.index, name='index'),
+    path('<str:room_name>/', views.room, name='room'),
+
 
 
     # path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
