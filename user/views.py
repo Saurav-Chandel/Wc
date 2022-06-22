@@ -27,7 +27,6 @@ class SignUpView(APIView):
         data=request.data
         print(data)
         
-
         if User.objects.filter(email=request.data['email']).exists():
             return Response({"error_message":"Email Already Exist"})
 
